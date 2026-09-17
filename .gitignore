@@ -4,6 +4,8 @@
 !.env.example
 *.local
 CLAUDE.local.md
+CLAUDE.md
+AGENTS.md
 
 # Python
 __pycache__/
@@ -63,4 +65,3 @@ Thumbs.db
 .tmp/
 tmp/
 temp/
-

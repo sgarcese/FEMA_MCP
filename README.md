@@ -23,7 +23,8 @@ risk determinations, or real-time emergency alerts.
 
 Locations can be supplied as a 5-digit county FIPS, an 11-digit Census tract
 FIPS, or latitude/longitude. The MCP intentionally does not collect or geocode a
-street address.
+street address. Coordinate queries are transmitted to FEMA's ArcGIS service;
+use a county or tract FIPS instead when precise coordinates are unnecessary.
 
 ## Run locally
 

@@ -70,16 +70,13 @@ export function createHttpApp(options: HttpAppOptions = {}) {
       try {
         await server.connect(transport);
         await transport.handleRequest(request, response, request.body);
-      } catch (error) {
+      } catch {
         if (!response.headersSent) {
           response.status(500).json({
             jsonrpc: "2.0",
             error: {
               code: -32603,
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Internal MCP server error",
+              message: "Internal MCP server error",
             },
             id: null,
           });
@@ -92,6 +89,39 @@ export function createHttpApp(options: HttpAppOptions = {}) {
     response.setHeader("Allow", "POST, OPTIONS");
     response.status(405).json({ error: "Method not allowed" });
   });
+
+  app.use(
+    (
+      error: unknown,
+      _request: Request,
+      response: Response,
+      next: NextFunction,
+    ) => {
+      if (response.headersSent) {
+        next(error);
+        return;
+      }
+
+      const bodyError = error as { status?: number; type?: string };
+      if (
+        bodyError.status === 400 &&
+        bodyError.type === "entity.parse.failed"
+      ) {
+        response.status(400).json({
+          jsonrpc: "2.0",
+          error: { code: -32700, message: "Invalid JSON request body" },
+          id: null,
+        });
+        return;
+      }
+
+      response.status(500).json({
+        jsonrpc: "2.0",
+        error: { code: -32603, message: "Internal MCP server error" },
+        id: null,
+      });
+    },
+  );
 
   return app;
 }

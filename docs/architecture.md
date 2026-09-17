@@ -22,7 +22,9 @@ MCP client
 The HTTP process does not persist requests or responses. Location input is a FIPS
 code or coordinates; street addresses are not accepted. Each upstream provider
 is isolated behind a client so a FEMA endpoint can change without changing the
-MCP contracts.
+MCP contracts. Coordinates are sent to FEMA's ArcGIS service to identify the
+containing Census tract, so privacy-sensitive clients should prefer a county or
+tract FIPS when possible.
 
 ## Initial contracts
 

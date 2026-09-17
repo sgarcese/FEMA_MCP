@@ -63,3 +63,22 @@ void test("rejects unapproved browser origins before MCP handling", async (t) =>
     "https://prepared.example",
   );
 });
+
+void test("returns a structured parse error for malformed JSON", async (t) => {
+  const listener = await listen(createHttpApp());
+  t.after(listener.close);
+
+  const response = await fetch(`${listener.url}/mcp`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{",
+  });
+
+  assert.equal(response.status, 400);
+  assert.match(response.headers.get("content-type") ?? "", /application\/json/);
+  assert.deepEqual(await response.json(), {
+    jsonrpc: "2.0",
+    error: { code: -32700, message: "Invalid JSON request body" },
+    id: null,
+  });
+});
