@@ -2,6 +2,7 @@
   "name": "fema-data-mcp",
   "version": "0.1.0",
   "description": "A nationwide MCP server for FEMA hazard risk and disaster declaration data.",
+  "license": "MIT",
   "type": "module",
   "private": true,
   "engines": {

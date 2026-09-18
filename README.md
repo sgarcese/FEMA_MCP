@@ -77,8 +77,8 @@ surface.
 
 ## Development workflow
 
-The project follows [CLAUDE.md](CLAUDE.md): test first, keep changes reviewable,
-and deploy only through CI after merge. Canonical commands are:
+The project uses a test-first workflow, keeps changes reviewable, and deploys
+only through CI after merge. Canonical commands are:
 
 ```bash
 npm test
@@ -88,3 +88,7 @@ npm run typecheck
 npm run build
 npm run check
 ```
+
+## License
+
+Released under the [MIT License](LICENSE).
