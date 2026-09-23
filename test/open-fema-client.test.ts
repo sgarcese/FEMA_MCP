@@ -84,10 +84,11 @@ void test("selects exactly the fields the client maps and filters on", async () 
 
   await new OpenFemaClient(fetcher).listDeclarations({ countyFips: "11001" });
 
-  const selected = requestedUrl?.searchParams.get("$select")?.split(",");
-  assert.deepEqual(selected, [...OPEN_FEMA_DECLARATION_FIELDS]);
+  const selected = requestedUrl?.searchParams.get("$select");
+  assert.equal(selected, OPEN_FEMA_DECLARATION_FIELDS.join(","));
+  const selectedFields = selected.split(",");
   for (const filtered of ["state", "fipsCountyCode", "declarationDate"]) {
-    assert.ok(selected?.includes(filtered), `${filtered} is not selected`);
+    assert.ok(selectedFields.includes(filtered), `${filtered} is not selected`);
   }
 });
 
