@@ -5,7 +5,7 @@ import type {
   Fetcher,
 } from "../types.js";
 
-const ENDPOINT =
+export const OPEN_FEMA_DECLARATIONS_URL =
   "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries";
 const SOURCE_URL =
   "https://www.fema.gov/about/openfema/disaster-declarations-summaries";
@@ -69,6 +69,30 @@ const STATE_BY_FIPS: Record<string, string> = {
   "78": "VI",
 };
 
+// Every field the client maps or filters on. Sent as $select so a renamed
+// upstream field fails loudly (OpenFEMA returns 400) instead of mapping to
+// null; test/open-fema.contract.test.ts checks these against the live API.
+export const OPEN_FEMA_DECLARATION_FIELDS = [
+  "femaDeclarationString",
+  "disasterNumber",
+  "state",
+  "declarationType",
+  "declarationDate",
+  "incidentType",
+  "declarationTitle",
+  "designatedArea",
+  "fipsStateCode",
+  "fipsCountyCode",
+  "incidentBeginDate",
+  "incidentEndDate",
+  "ihProgramDeclared",
+  "iaProgramDeclared",
+  "paProgramDeclared",
+  "hmProgramDeclared",
+  "tribalRequest",
+  "lastRefresh",
+] as const satisfies ReadonlyArray<keyof OpenFemaRecord>;
+
 interface OpenFemaRecord {
   femaDeclarationString: string;
   disasterNumber: number;
@@ -90,9 +114,18 @@ interface OpenFemaRecord {
   lastRefresh: string;
 }
 
+type OpenFemaError = { message?: string } | Array<{ message?: string }>;
+
 interface OpenFemaResponse {
   DisasterDeclarationsSummaries?: OpenFemaRecord[];
-  error?: { message?: string };
+  error?: OpenFemaError;
+}
+
+function errorMessage(error: OpenFemaError | undefined): string | undefined {
+  const messages = (Array.isArray(error) ? error : error ? [error] : [])
+    .map((entry) => entry.message)
+    .filter(Boolean);
+  return messages.length ? messages.join("; ") : undefined;
 }
 
 function mapRecord(record: OpenFemaRecord): DisasterDeclaration {
@@ -187,9 +220,10 @@ export class OpenFemaClient {
     }
 
     const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
-    const url = new URL(ENDPOINT);
+    const url = new URL(OPEN_FEMA_DECLARATIONS_URL);
     url.search = new URLSearchParams({
       $filter: filters.join(" and "),
+      $select: OPEN_FEMA_DECLARATION_FIELDS.join(","),
       $orderby: "declarationDate desc",
       $top: String(limit),
     }).toString();
@@ -198,13 +232,14 @@ export class OpenFemaClient {
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(15_000),
     });
+    const body = (await response.json().catch(() => ({}))) as OpenFemaResponse;
+    const upstreamMessage = errorMessage(body.error);
     if (!response.ok)
-      throw new Error(`OpenFEMA request failed with HTTP ${response.status}`);
-    const body = (await response.json()) as OpenFemaResponse;
-    if (body.error)
       throw new Error(
-        `OpenFEMA error: ${body.error.message ?? "unknown error"}`,
+        `OpenFEMA request failed with HTTP ${response.status}${upstreamMessage ? `: ${upstreamMessage}` : ""}`,
       );
+    if (body.error)
+      throw new Error(`OpenFEMA error: ${upstreamMessage ?? "unknown error"}`);
     const declarations = (body.DisasterDeclarationsSummaries ?? []).map(
       mapRecord,
     );

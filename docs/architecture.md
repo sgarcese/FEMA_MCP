@@ -53,6 +53,10 @@ small, coherent payload without duplicating data-joining logic.
   own requested field list (`NRI_LAYERS` in `src/clients/nri-client.ts`). ArcGIS
   rejects a query that names any field the layer lacks. `npm run test:live`
   checks the lists against the live layers nightly.
+- The OpenFEMA client sends an explicit `$select`
+  (`OPEN_FEMA_DECLARATION_FIELDS`), so a renamed upstream field produces a 400
+  with OpenFEMA's message instead of silently mapping to null. The nightly live
+  tests also fail if OpenFEMA announces a deprecation for the dataset.
 - Upstream calls time out after 15 seconds and translate upstream failures into
   recoverable MCP tool errors.
 - Input schemas constrain FIPS codes, coordinates, years, enum values, and result
