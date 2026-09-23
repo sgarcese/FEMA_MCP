@@ -49,6 +49,32 @@ npx @modelcontextprotocol/inspector
 
 Choose Streamable HTTP and connect to `http://localhost:3000/mcp`.
 
+### Claude Desktop over stdio
+
+Build the server before configuring Claude Desktop:
+
+```bash
+npm install
+npm run build
+```
+
+Add an entry like this to `claude_desktop_config.json`, replacing both paths
+with absolute paths on your machine:
+
+```json
+{
+  "mcpServers": {
+    "fema-data": {
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/to/FEMA_MCP/dist/stdio.js"]
+    }
+  }
+}
+```
+
+Claude Desktop launches this process itself, so do not run `npm run dev` at
+the same time. The stdio and HTTP entry points expose the same FEMA tools.
+
 ## Configuration
 
 - `PORT` — listening port; defaults to `3000`.

@@ -12,14 +12,17 @@ outside this service.
 
 ```text
 MCP client
-  -> stateless Streamable HTTP endpoint
+  -> stateless Streamable HTTP endpoint (src/index.ts)
+     or stdio for locally launched clients (src/stdio.ts)
     -> task-shaped read-only tool
       -> FEMA National Risk Index ArcGIS Feature Service
       -> OpenFEMA DisasterDeclarationsSummaries v2
     <- compact JSON with provenance and safety caveats
 ```
 
-The HTTP process does not persist requests or responses. Location input is a FIPS
+Both transports wrap the same `createMcpServer()` and expose identical tools.
+The stdio entry point writes only JSON-RPC to stdout; diagnostics go to stderr.
+Neither process persists requests or responses. Location input is a FIPS
 code or coordinates; street addresses are not accepted. Each upstream provider
 is isolated behind a client so a FEMA endpoint can change without changing the
 MCP contracts. Coordinates are sent to FEMA's ArcGIS service to identify the
