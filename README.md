@@ -122,7 +122,9 @@ lookups. Run it after changing NRI field lists or when FEMA publishes a new NRI
 version.
 
 GitHub Actions runs `npm run check` on every pull request and push to `main`
-(`.github/workflows/ci.yml`); merge only after it passes. A separate nightly
+(`.github/workflows/ci.yml`). `main` is protected: changes land only through
+pull requests, the `npm run check` job must pass on a branch that is up to date
+with `main`, review conversations must be resolved, and admins are not exempt. A separate nightly
 workflow (`.github/workflows/live-contract.yml`, also manually dispatchable)
 runs the live FEMA contract tests so upstream schema changes surface without
 blocking pull requests.
