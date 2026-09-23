@@ -1,6 +1,7 @@
 # ADR 0001: Initial MCP architecture
 
-- Status: Accepted for the initial vertical slice
+- Status: Accepted for the initial vertical slice; transport amended by
+  [ADR 0002](0002-stdio-transport.md)
 - Date: 2026-09-17
 
 ## Context
