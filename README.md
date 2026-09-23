@@ -89,6 +89,12 @@ npm run build
 npm run check
 ```
 
+GitHub Actions runs `npm run check` on every pull request and push to `main`
+(`.github/workflows/ci.yml`); merge only after it passes. A separate nightly
+workflow (`.github/workflows/live-contract.yml`, also manually dispatchable)
+runs the live FEMA contract tests so upstream schema changes surface without
+blocking pull requests.
+
 ## License
 
 Released under the [MIT License](LICENSE).

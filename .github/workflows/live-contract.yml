@@ -1,0 +1,25 @@
+name: Live FEMA contract
+
+# Calls FEMA's hosted services, so it runs on a schedule rather than as a PR
+# gate: upstream outages or schema changes surface here without blocking merges.
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: npm run test:live
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:live
