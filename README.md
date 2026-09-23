@@ -116,10 +116,12 @@ npm run check
 ```
 
 `npm test` never calls FEMA. `npm run test:live` runs opt-in contract tests
-against FEMA's hosted National Risk Index layers: it checks that every requested
-field is published on each layer and makes real county, tract, and coordinate
-lookups. Run it after changing NRI field lists or when FEMA publishes a new NRI
-version.
+against both upstream sources. For the National Risk Index ArcGIS layers, it
+checks that every requested field is published on each layer and makes real
+county, tract, and coordinate lookups. For OpenFEMA Disaster Declarations
+Summaries v2, it checks that every field the client selects is published and
+that OpenFEMA hasn't announced a deprecation, then makes real state and county
+queries. Run it after changing either client's field lists.
 
 GitHub Actions runs `npm run check` on every pull request and push to `main`
 (`.github/workflows/ci.yml`). `main` is protected: changes land only through
