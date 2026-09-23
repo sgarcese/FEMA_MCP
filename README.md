@@ -131,6 +131,11 @@ workflow (`.github/workflows/live-contract.yml`, also manually dispatchable)
 runs the live FEMA contract tests so upstream schema changes surface without
 blocking pull requests.
 
+Dependabot (`.github/dependabot.yml`) opens weekly update PRs for npm packages
+and GitHub Actions. Minor and patch bumps are grouped and majors arrive
+separately; every update goes through the same required `npm run check` gate.
+Merged branches are deleted automatically.
+
 ## License
 
 Released under the [MIT License](LICENSE).
