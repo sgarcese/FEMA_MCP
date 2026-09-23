@@ -114,3 +114,67 @@ void test("rejects malformed location input before making a request", async () =
   );
   assert.equal(called, false);
 });
+
+function capturingFetcher(attributes: Record<string, unknown>) {
+  const urls: URL[] = [];
+  const fetcher: typeof fetch = (input) => {
+    urls.push(
+      new URL(
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url,
+      ),
+    );
+    return Promise.resolve(Response.json({ features: [{ attributes }] }));
+  };
+  return { fetcher, urls };
+}
+
+const tractAttributes = {
+  STATE: "District of Columbia",
+  STATEABBRV: "DC",
+  COUNTY: "District of Columbia",
+  STCOFIPS: "11001",
+  TRACTFIPS: "11001980000",
+  NRI_VER: "1.20.0",
+};
+
+function requestedOutFields(url: URL | undefined): string[] {
+  return url?.searchParams.get("outFields")?.split(",") ?? [];
+}
+
+void test("does not request tract-only fields from the county layer (#1)", async () => {
+  const { STCOFIPS, STATE, STATEABBRV, COUNTY, NRI_VER } = tractAttributes;
+  const { fetcher, urls } = capturingFetcher({
+    STATE,
+    STATEABBRV,
+    COUNTY,
+    STCOFIPS,
+    NRI_VER,
+  });
+
+  const profile = await new NriClient(fetcher).getHazardProfile({
+    fips: "11001",
+  });
+
+  const outFields = requestedOutFields(urls[0]);
+  assert.ok(outFields.includes("STCOFIPS"));
+  assert.ok(!outFields.includes("TRACTFIPS"));
+  assert.equal(profile.location.granularity, "county");
+  assert.equal(profile.location.tractFips, null);
+});
+
+void test("requests tract fields for tract FIPS and coordinate lookups", async () => {
+  const { fetcher, urls } = capturingFetcher(tractAttributes);
+  const client = new NriClient(fetcher);
+
+  await client.getHazardProfile({ fips: "11001980000" });
+  await client.getHazardProfile({ latitude: 38.8977, longitude: -77.0365 });
+
+  for (const url of urls) {
+    assert.match(url.pathname, /National_Risk_Index_Census_Tracts/);
+    assert.ok(requestedOutFields(url).includes("TRACTFIPS"));
+  }
+});

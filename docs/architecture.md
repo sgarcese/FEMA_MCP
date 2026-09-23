@@ -44,6 +44,10 @@ small, coherent payload without duplicating data-joining logic.
 ## Reliability and security
 
 - All tools are read-only and idempotent.
+- NRI county and tract layers publish different schemas, so each layer has its
+  own requested field list (`NRI_LAYERS` in `src/clients/nri-client.ts`). ArcGIS
+  rejects a query that names any field the layer lacks. `npm run test:live`
+  checks the lists against the live layers.
 - Upstream calls time out after 15 seconds and translate upstream failures into
   recoverable MCP tool errors.
 - Input schemas constrain FIPS codes, coordinates, years, enum values, and result

@@ -89,6 +89,12 @@ npm run build
 npm run check
 ```
 
+`npm test` never calls FEMA. `npm run test:live` runs opt-in contract tests
+against FEMA's hosted National Risk Index layers: it checks that every requested
+field is published on each layer and makes real county, tract, and coordinate
+lookups. Run it after changing NRI field lists or when FEMA publishes a new NRI
+version.
+
 GitHub Actions runs `npm run check` on every pull request and push to `main`
 (`.github/workflows/ci.yml`); merge only after it passes. A separate nightly
 workflow (`.github/workflows/live-contract.yml`, also manually dispatchable)

@@ -6,10 +6,6 @@ import type {
   HazardRisk,
 } from "../types.js";
 
-const COUNTY_LAYER =
-  "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Counties/FeatureServer/0";
-const TRACT_LAYER =
-  "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0";
 const SOURCE_URL =
   "https://www.fema.gov/about/openfema/data-sets/national-risk-index-data";
 
@@ -34,12 +30,11 @@ const HAZARDS = [
   ["WNTW", "Winter Weather"],
 ] as const;
 
-const OUT_FIELDS = [
+const COMMON_FIELDS = [
   "STATE",
   "STATEABBRV",
   "COUNTY",
   "STCOFIPS",
-  "TRACTFIPS",
   "RISK_SCORE",
   "RISK_RATNG",
   "SOVI_SCORE",
@@ -53,7 +48,26 @@ const OUT_FIELDS = [
     `${code}_AFREQ`,
     `${code}_EALR`,
   ]),
-].join(",");
+];
+
+// The county and tract layers publish different schemas: TRACTFIPS exists
+// only on the tract layer, and ArcGIS rejects a query naming any unknown
+// field. test/nri-layers.contract.test.ts checks these against the live layers.
+export const NRI_LAYERS = {
+  county: {
+    url: "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Counties/FeatureServer/0",
+    idField: "STCOFIPS",
+    outFields: COMMON_FIELDS,
+  },
+  census_tract: {
+    url: "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0",
+    idField: "TRACTFIPS",
+    outFields: [...COMMON_FIELDS, "TRACTFIPS"],
+  },
+} as const satisfies Record<
+  HazardProfile["location"]["granularity"],
+  { url: string; idField: string; outFields: readonly string[] }
+>;
 
 type NriAttributes = Record<string, unknown>;
 
@@ -99,7 +113,6 @@ export class NriClient {
       throw new Error("Provide either fips or coordinates, not both");
     }
 
-    let endpoint: string;
     let parameters: Record<string, string>;
     let granularity: "county" | "census_tract";
 
@@ -110,10 +123,8 @@ export class NriClient {
         );
       }
       granularity = input.fips.length === 5 ? "county" : "census_tract";
-      endpoint = granularity === "county" ? COUNTY_LAYER : TRACT_LAYER;
       parameters = {
-        where: `${granularity === "county" ? "STCOFIPS" : "TRACTFIPS"} = '${input.fips}'`,
-        outFields: OUT_FIELDS,
+        where: `${NRI_LAYERS[granularity].idField} = '${input.fips}'`,
       };
     } else {
       if (input.latitude === undefined || input.longitude === undefined) {
@@ -126,22 +137,20 @@ export class NriClient {
         throw new Error("longitude must be between -180 and 180");
       }
       granularity = "census_tract";
-      endpoint = TRACT_LAYER;
       parameters = {
         where: "1=1",
         geometry: `${input.longitude},${input.latitude}`,
         geometryType: "esriGeometryPoint",
         inSR: "4326",
         spatialRel: "esriSpatialRelIntersects",
-        outFields: OUT_FIELDS,
       };
     }
 
-    const records = await queryArcGis<NriAttributes>(
-      this.fetcher,
-      endpoint,
-      parameters,
-    );
+    const layer = NRI_LAYERS[granularity];
+    const records = await queryArcGis<NriAttributes>(this.fetcher, layer.url, {
+      ...parameters,
+      outFields: layer.outFields.join(","),
+    });
     const attributes = records[0];
     if (!attributes) {
       throw new Error("No FEMA National Risk Index area matched this location");
