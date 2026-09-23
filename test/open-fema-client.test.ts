@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { OpenFemaClient } from "../src/clients/open-fema-client.js";
+import {
+  OPEN_FEMA_DECLARATION_FIELDS,
+  OpenFemaClient,
+} from "../src/clients/open-fema-client.js";
 
 void test("queries declaration history with bounded, encoded filters", async () => {
   let requestedUrl = "";
@@ -67,5 +70,46 @@ void test("requires a state or county and validates the year range", async () =>
   await assert.rejects(
     client.listDeclarations({ state: "MA", fromYear: 2022, toYear: 2020 }),
     /fromYear must not be later than toYear/,
+  );
+});
+
+void test("selects exactly the fields the client maps and filters on", async () => {
+  let requestedUrl: URL | undefined;
+  const fetcher: typeof fetch = (input) => {
+    requestedUrl = new URL(input instanceof Request ? input.url : input);
+    return Promise.resolve(
+      Response.json({ DisasterDeclarationsSummaries: [] }),
+    );
+  };
+
+  await new OpenFemaClient(fetcher).listDeclarations({ countyFips: "11001" });
+
+  const selected = requestedUrl?.searchParams.get("$select")?.split(",");
+  assert.deepEqual(selected, [...OPEN_FEMA_DECLARATION_FIELDS]);
+  for (const filtered of ["state", "fipsCountyCode", "declarationDate"]) {
+    assert.ok(selected?.includes(filtered), `${filtered} is not selected`);
+  }
+});
+
+void test("surfaces OpenFEMA's error message on a rejected query", async () => {
+  const fetcher: typeof fetch = () =>
+    Promise.resolve(
+      Response.json(
+        {
+          error: [
+            {
+              name: "OData Query Parser Error",
+              message:
+                'Criteria includes field "x" not found in the data model.',
+            },
+          ],
+        },
+        { status: 400 },
+      ),
+    );
+
+  await assert.rejects(
+    new OpenFemaClient(fetcher).listDeclarations({ state: "DC" }),
+    /HTTP 400.*field "x" not found in the data model/,
   );
 });
